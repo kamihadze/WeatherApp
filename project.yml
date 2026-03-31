@@ -1,0 +1,20 @@
+name: WeatherApp
+options:
+  bundleIdPrefix: ru.kamihadze
+  deploymentTarget:
+    iOS: "15.0"
+  xcodeVersion: "15.0"
+settings:
+  DEVELOPMENT_TEAM: ""
+  INFOPLIST_FILE: WeatherApp/Info.plist
+targets:
+  WeatherApp:
+    type: application
+    platform: iOS
+    sources:
+      - WeatherApp
+    settings:
+      INFOPLIST_FILE: WeatherApp/Info.plist
+      PRODUCT_BUNDLE_IDENTIFIER: ru.kamihadze.WeatherApp
+      TARGETED_DEVICE_FAMILY: "1"
+      SWIFT_VERSION: "5.0"
