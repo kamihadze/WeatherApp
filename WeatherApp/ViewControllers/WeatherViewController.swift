@@ -46,16 +46,10 @@ final class WeatherViewController: UIViewController {
 
     private let dailyTitleView = WeatherViewController.makeSectionTitle("ПРОГНОЗ НА 3 ДНЯ")
 
-    private lazy var dailyTableView: UITableView = {
-        let tv = UITableView(frame: .zero, style: .plain)
-        tv.backgroundColor = .clear
-        tv.separatorColor = .white.withAlphaComponent(0.2)
-        tv.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
-        tv.isScrollEnabled = false
-        tv.translatesAutoresizingMaskIntoConstraints = false
-        tv.register(DailyForecastCell.self, forCellReuseIdentifier: DailyForecastCell.reuseIdentifier)
-        tv.dataSource = self
-        return tv
+    private let dailyForecastView: DailyForecastView = {
+        let view = DailyForecastView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
     }()
 
     private let loadingIndicator: UIActivityIndicatorView = {
@@ -74,7 +68,6 @@ final class WeatherViewController: UIViewController {
     }()
 
     private var hourlyData: [HourWeather] = []
-    private var forecastData: ForecastResponse?
 
     private let gradientLayer = CAGradientLayer()
 
@@ -113,7 +106,6 @@ final class WeatherViewController: UIViewController {
         hourlyTitleView.translatesAutoresizingMaskIntoConstraints = false
         hourlyCollectionView.translatesAutoresizingMaskIntoConstraints = false
         dailyTitleView.translatesAutoresizingMaskIntoConstraints = false
-        dailyTableView.translatesAutoresizingMaskIntoConstraints = false
 
         let hourlySeparator = makeSeparator()
         let dailySeparator = makeSeparator()
@@ -124,14 +116,11 @@ final class WeatherViewController: UIViewController {
         contentStack.addArrangedSubview(hourlyCollectionView)
         contentStack.addArrangedSubview(dailySeparator)
         contentStack.addArrangedSubview(dailyTitleView)
-        contentStack.addArrangedSubview(dailyTableView)
+        contentStack.addArrangedSubview(dailyForecastView)
 
         contentStack.setCustomSpacing(24, after: currentWeatherView)
         contentStack.setCustomSpacing(8, after: hourlyTitleView)
         contentStack.setCustomSpacing(8, after: dailyTitleView)
-
-        let dailyHeight = dailyTableView.heightAnchor.constraint(equalToConstant: 165)
-        dailyHeight.priority = .defaultHigh
 
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -146,7 +135,6 @@ final class WeatherViewController: UIViewController {
             contentStack.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
 
             hourlyCollectionView.heightAnchor.constraint(equalToConstant: 100),
-            dailyHeight,
 
             loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
@@ -176,7 +164,6 @@ final class WeatherViewController: UIViewController {
             loadingIndicator.stopAnimating()
             scrollView.isHidden = false
             errorView.isHidden = true
-            forecastData = data
             populateUI(with: data)
 
         case .error(let message):
@@ -192,7 +179,7 @@ final class WeatherViewController: UIViewController {
         currentWeatherView.configure(current: data.current, location: data.location, today: today)
         hourlyData = buildHourlyData(from: data)
         hourlyCollectionView.reloadData()
-        dailyTableView.reloadData()
+        dailyForecastView.configure(forecastDays: data.forecast.forecastday)
     }
 
     private func buildHourlyData(from data: ForecastResponse) -> [HourWeather] {
@@ -211,18 +198,21 @@ final class WeatherViewController: UIViewController {
         return hours
     }
 
+    private static let dateTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
     private func extractCurrentHour(from localtime: String) -> Int {
-        let parts = localtime.split(separator: " ")
-        guard parts.count == 2 else { return 0 }
-        let timeParts = parts[1].split(separator: ":")
-        return Int(timeParts.first ?? "0") ?? 0
+        guard let date = Self.dateTimeFormatter.date(from: localtime) else { return 0 }
+        return Calendar.current.component(.hour, from: date)
     }
 
     private func extractHour(from timeString: String) -> Int {
-        let parts = timeString.split(separator: " ")
-        guard parts.count == 2 else { return 0 }
-        let timeParts = parts[1].split(separator: ":")
-        return Int(timeParts.first ?? "0") ?? 0
+        guard let date = Self.dateTimeFormatter.date(from: timeString) else { return 0 }
+        return Calendar.current.component(.hour, from: date)
     }
 
     private static func makeSectionTitle(_ text: String) -> UIView {
@@ -277,31 +267,6 @@ extension WeatherViewController: UICollectionViewDataSource {
             for: indexPath
         ) as! HourlyForecastCell
         cell.configure(hour: hourlyData[indexPath.item], isNow: indexPath.item == 0)
-        return cell
-    }
-}
-
-extension WeatherViewController: UITableViewDataSource {
-
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return forecastData?.forecast.forecastday.count ?? 0
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(
-            withIdentifier: DailyForecastCell.reuseIdentifier,
-            for: indexPath
-        ) as! DailyForecastCell
-
-        guard let days = forecastData?.forecast.forecastday else { return cell }
-        let globalMin = days.map(\.day.mintempC).min() ?? 0
-        let globalMax = days.map(\.day.maxtempC).max() ?? 0
-        cell.configure(
-            forecastDay: days[indexPath.row],
-            globalMin: globalMin,
-            globalMax: globalMax,
-            isToday: indexPath.row == 0
-        )
         return cell
     }
 }

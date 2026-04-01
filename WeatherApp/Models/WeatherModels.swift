@@ -50,11 +50,19 @@ struct ForecastDay: Decodable {
 struct Day: Decodable {
     let maxtempC: Double
     let mintempC: Double
+    let avgHumidity: Int
+    let maxwindKph: Double
+    let totalPrecipMm: Double
+    let uv: Double
     let condition: Condition
 
     enum CodingKeys: String, CodingKey {
         case maxtempC = "maxtemp_c"
         case mintempC = "mintemp_c"
+        case avgHumidity = "avghumidity"
+        case maxwindKph = "maxwind_kph"
+        case totalPrecipMm = "totalprecip_mm"
+        case uv
         case condition
     }
 }

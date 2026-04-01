@@ -161,13 +161,8 @@ final class DailyForecastCell: UITableViewCell {
     }
 
     private func loadIcon(from urlString: String) {
-        let fullURL = urlString.hasPrefix("http") ? urlString : "https:\(urlString)"
-        guard let url = URL(string: fullURL) else { return }
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-            guard let data = data, let image = UIImage(data: data) else { return }
-            DispatchQueue.main.async {
-                self?.iconImageView.image = image
-            }
-        }.resume()
+        ImageCache.shared.loadImage(from: urlString) { [weak self] image in
+            self?.iconImageView.image = image
+        }
     }
 }

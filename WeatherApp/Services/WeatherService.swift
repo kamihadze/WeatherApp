@@ -23,7 +23,7 @@ enum WeatherError: LocalizedError {
 final class WeatherService {
 
     private let apiKey = "fa8b3df74d4042b9aa7135114252304"
-    private let baseURL = "http://api.weatherapi.com/v1"
+    private let baseURL = "https://api.weatherapi.com/v1"
     private let session: URLSession
 
     init(session: URLSession = .shared) {
